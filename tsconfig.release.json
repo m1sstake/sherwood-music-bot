@@ -4,6 +4,7 @@
     "sourceMap": false,
     "removeComments": true,
     "noEmitOnError": true,
+    "skipLibCheck": true,
   },
   "include": ["src"],
   "exclude": ["**/*.test.ts", "**/*.spec.ts"]
