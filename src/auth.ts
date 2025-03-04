@@ -1,8 +1,9 @@
 import { join, dirname } from 'path';
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { DisTube, DisTubePlugin } from 'distube';
 import { YouTubePlugin } from '@distube/youtube';
 import { SpotifyPlugin } from '@distube/spotify';
+import { FilePlugin } from '@distube/file';
 import { Client, Collection } from 'discord.js';
 import { fileURLToPath } from 'url';
 import type { Awaitable, DisTubeEvents } from 'distube';
@@ -36,9 +37,12 @@ export const followUp = async (
 export class DisTubeClient extends Client<true> {
   distube = new DisTube(this, {
     plugins: [
-      new YouTubePlugin(),
+      new YouTubePlugin({
+        cookies: JSON.parse(readFileSync('cookies.json', 'utf-8')),
+      }),
       new SpotifyPlugin() as unknown as DisTubePlugin,
       new DirectLinkPlugin() as unknown as DisTubePlugin,
+      new FilePlugin() as unknown as DisTubePlugin,
     ],
     emitAddListWhenCreatingQueue: true,
     emitAddSongWhenCreatingQueue: true,
@@ -62,6 +66,7 @@ export class DisTubeClient extends Client<true> {
       this.loadCommand.bind(this),
     );
   }
+
   async loadCommand(name: string) {
     try {
       const CMD = await import(`./commands/${name}`);
@@ -75,6 +80,7 @@ export class DisTubeClient extends Client<true> {
       return e;
     }
   }
+
   async loadEvent(name: string) {
     try {
       const E = await import(`./events/client/${name}`);
@@ -105,17 +111,6 @@ export class DisTubeClient extends Client<true> {
     }
   }
 }
-
-// const client = new DisTubeClient({
-//   intents: [
-//     GatewayIntentBits.Guilds,
-//     GatewayIntentBits.GuildMessages,
-//     GatewayIntentBits.GuildVoiceStates,
-//     GatewayIntentBits.MessageContent,
-//   ],
-// });
-//
-// client.login(TOKEN);
 
 export interface Metadata {
   interaction: ChatInputCommandInteraction<'cached'>;
