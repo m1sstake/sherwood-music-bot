@@ -47,6 +47,8 @@ export default class PlaylocalCommand extends Command {
         return;
       }
 
+      await interaction.deferReply();
+
       void this.client.distube.play<Metadata>(
         vc,
         `file://${currentPathOfLocalMusic}`,
