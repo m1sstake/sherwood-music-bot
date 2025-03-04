@@ -1,5 +1,5 @@
 import { join, dirname } from 'path';
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync } from 'fs';
 import { DisTube, DisTubePlugin } from 'distube';
 import { YouTubePlugin } from '@distube/youtube';
 import { SpotifyPlugin } from '@distube/spotify';
