@@ -1,5 +1,5 @@
 import { join, dirname } from 'path';
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { DisTube, DisTubePlugin } from 'distube';
 import { YouTubePlugin } from '@distube/youtube';
 import { SpotifyPlugin } from '@distube/spotify';
@@ -34,10 +34,20 @@ export const followUp = async (
   }
 };
 
+function getYoutubeCookies() {
+  try {
+    return JSON.parse(readFileSync('./cookies.json', { encoding: 'utf-8' }));
+  } catch (e) {
+    console.log(e);
+
+    return [];
+  }
+}
+
 export class DisTubeClient extends Client<true> {
   distube = new DisTube(this, {
     plugins: [
-      new YouTubePlugin(),
+      new YouTubePlugin({ cookies: getYoutubeCookies() }),
       new SpotifyPlugin() as unknown as DisTubePlugin,
       new DirectLinkPlugin() as unknown as DisTubePlugin,
       new FilePlugin() as unknown as DisTubePlugin,
