@@ -20,6 +20,7 @@ import type {
 } from 'discord.js';
 import { DirectLinkPlugin } from '@distube/direct-link';
 import { Command } from './types/types.js';
+import ytdl, { Agent } from '@distube/ytdl-core';
 
 export const followUp = async (
   interaction: ChatInputCommandInteraction,
@@ -34,7 +35,7 @@ export const followUp = async (
   }
 };
 
-function getYoutubeCookies() {
+function getYoutubeCookies(): ytdl.Cookie[] {
   try {
     return JSON.parse(readFileSync('./cookies.json', { encoding: 'utf-8' }));
   } catch (e) {
@@ -44,10 +45,24 @@ function getYoutubeCookies() {
   }
 }
 
+function getYoutubeAgent(): Agent {
+  const cookies = getYoutubeCookies();
+  const agentOptions = {
+    pipelining: 5,
+    maxRedirections: 0,
+  };
+
+  return ytdl.createAgent(cookies, agentOptions);
+}
+
 export class DisTubeClient extends Client<true> {
   distube = new DisTube(this, {
     plugins: [
-      new YouTubePlugin({ cookies: getYoutubeCookies() }),
+      new YouTubePlugin({
+        ytdlOptions: {
+          agent: getYoutubeAgent(),
+        },
+      }),
       new SpotifyPlugin() as unknown as DisTubePlugin,
       new DirectLinkPlugin() as unknown as DisTubePlugin,
       new FilePlugin() as unknown as DisTubePlugin,
