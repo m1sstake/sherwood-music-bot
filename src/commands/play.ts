@@ -20,26 +20,12 @@ export default class PlayCommand extends Command {
     .addNumberOption((opt) =>
       opt.setName('seek').setDescription('Seek').setRequired(false),
     );
-  // .addBooleanOption((opt) =>
-  //   opt
-  //     .setName('skip')
-  //     .setDescription('Skip the current song (Available if vote skip is off)')
-  //     .setRequired(false),
-  // )
-  // .addIntegerOption((opt) =>
-  //   opt
-  //     .setName('position')
-  //     .setDescription('Position will be added to the queue')
-  //     .setRequired(false),
-  // );
+
   async onChatInput(interaction: ChatInputCommandInteraction<'cached'>) {
     const input = interaction.options.getString('input', true);
-    // const skip = interaction.options.getBoolean('skip', false) ?? false;
-    // const position =
-    //   interaction.options.getInteger('position', false) ?? undefined;
+
     const seek = interaction.options.getNumber('seek', false) ?? undefined;
 
-    // Handled by inVoiceChannel property
     const vc = interaction.member?.voice?.channel;
 
     if (!vc) {
