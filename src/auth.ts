@@ -50,6 +50,7 @@ function getYoutubeAgent(): Agent {
   const agentOptions = {
     pipelining: 5,
     maxRedirections: 0,
+    localAddress: '89.187.174.121',
   };
 
   return ytdl.createAgent(cookies, agentOptions);
