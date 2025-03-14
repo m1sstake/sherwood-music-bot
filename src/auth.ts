@@ -47,13 +47,8 @@ function getYoutubeCookies(): ytdl.Cookie[] {
 
 function getYoutubeAgent(): Agent {
   const cookies = getYoutubeCookies();
-  const agentOptions = {
-    pipelining: 5,
-    maxRedirections: 0,
-    localAddress: '89.187.174.121',
-  };
 
-  return ytdl.createAgent(cookies, agentOptions);
+  return ytdl.createAgent(cookies);
 }
 
 export class DisTubeClient extends Client<true> {
