@@ -59,6 +59,7 @@ export class DisTubeClient extends Client<true> {
       new YouTubePlugin({
         ytdlOptions: {
           agent: getYoutubeAgent(),
+          playerClients: ['WEB', 'WEB_EMBEDDED'],
         },
         cookies: getYoutubeCookies(),
       }),
