@@ -37,9 +37,9 @@ export const followUp = async (
 
 function getYoutubeCookies(): ytdl.Cookie[] {
   try {
-    return JSON.parse(readFileSync('./cookies.json', { encoding: 'utf-8' }));
-
     console.log('Cookies load');
+
+    return JSON.parse(readFileSync('./cookies.json', { encoding: 'utf-8' }));
   } catch (e) {
     console.log(e);
 
