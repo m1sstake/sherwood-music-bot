@@ -38,6 +38,8 @@ export const followUp = async (
 function getYoutubeCookies(): ytdl.Cookie[] {
   try {
     return JSON.parse(readFileSync('./cookies.json', { encoding: 'utf-8' }));
+
+    console.log('Cookies load');
   } catch (e) {
     console.log(e);
 
@@ -58,6 +60,7 @@ export class DisTubeClient extends Client<true> {
         ytdlOptions: {
           agent: getYoutubeAgent(),
         },
+        cookies: getYoutubeCookies(),
       }),
       new SpotifyPlugin() as unknown as DisTubePlugin,
       new DirectLinkPlugin() as unknown as DisTubePlugin,
