@@ -46,7 +46,7 @@
     "@distube/youtube": "^1.0.4",
     "@distube/ytdl-core": "4.16.9",
     "discord.js": "^14.17.3",
-    "distube": "^5.0.4",
+    "distube": "latest",
     "sodium-native": "^4.3.1",
     "tslib": "~2.8"
   },

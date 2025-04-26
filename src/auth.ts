@@ -58,10 +58,9 @@ export class DisTubeClient extends Client<true> {
     plugins: [
       new YouTubePlugin({
         ytdlOptions: {
-          // agent: getYoutubeAgent(),
-          playerClients: ['WEB'],
+          agent: getYoutubeAgent(),
         },
-        // cookies: getYoutubeCookies(),
+        cookies: getYoutubeCookies(),
       }),
       new SpotifyPlugin() as unknown as DisTubePlugin,
       new DirectLinkPlugin() as unknown as DisTubePlugin,
