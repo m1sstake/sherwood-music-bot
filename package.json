@@ -24,7 +24,7 @@
     "vitest": "~2.1"
   },
   "scripts": {
-    "start": "node --env-file=.env build/src/main.js",
+    "start": "node --env-file=.env build/main.js",
     "clean": "rimraf coverage build tmp",
     "build": "tsc -p tsconfig.json",
     "build:watch": "tsc -w -p tsconfig.json",
@@ -44,7 +44,7 @@
     "@distube/file": "^1.0.1",
     "@distube/spotify": "^2.0.2",
     "@distube/youtube": "^1.0.4",
-    "@distube/ytdl-core": "4.16.12",
+    "@distube/ytdl-core": "latest",
     "discord.js": "^14.17.3",
     "distube": "latest",
     "sodium-native": "^4.3.1",
