@@ -135,22 +135,20 @@ export class YouTubePlugin extends ExtractorPlugin {
       return new YouTubePlaylist(this, info, options);
     }
     if (ytdl.validateURL(url)) {
-        // return new YouTubeSong(this, video, options);
       const info = await ytdl.getBasicInfo(url, this.ytdlOptions);
       return new YouTubeSong(this, info, options);
     }
     throw new DisTubeError("CANNOT_RESOLVE_SONG", url);
   }
+
   async getStreamURL<T = unknown>(song: YouTubeSong<T>): Promise<string> {
     if (!song.url || !ytdl.validateURL(song.url)) throw new DisTubeError("CANNOT_RESOLVE_SONG", song);
-    const videoId = ytdl.getVideoID(song.url);
-    const video = await this.getVideoInfoWithYtDlp(videoId);
+    const video = await this.getVideoInfoWithYtDlp(song.url);
 
     const formats = (video.formats ?? []).map((format: YtDlpFormat) => ({
       url: format.url ?? '',
       itag: format.format_id ?? '',
-      codecs:
-                    format.acodec && format.acodec !== 'none'
+      codecs: format.acodec && format.acodec !== 'none'
                       ? format.acodec
                       : format.vcodec ?? '',
       container: format.ext ?? '',
@@ -160,29 +158,12 @@ export class YouTubePlugin extends ExtractorPlugin {
       isLive: video.is_live ?? false,
     }));
 
-      const format = formats.find((format): boolean => format.codecs === 'opus' && format.container === 'webm' && format.audioSampleRate !== undefined && parseInt(format.audioSampleRate, 10) === 48000 && Boolean(format.url));
-
-    console.log(format);
+    const format = formats.find((format): boolean => (format.codecs === 'opus' && format.container === 'webm' && format.audioSampleRate !== undefined && parseInt(format.audioSampleRate, 10) === 48000 && Boolean(format.url)  || format.container === 'mp4' && format.audioSampleRate !== undefined && parseInt(format.audioSampleRate, 10) > 44000 && Boolean(format.url)));
 
     if (!format) throw new DisTubeError("UNPLAYABLE_FORMATS");
 
 
     return format?.url;
-    // const info = await ytdl.getInfo(song.url, this.ytdlOptions);
-    // if (!info.formats?.length) throw new DisTubeError("UNAVAILABLE_VIDEO");
-    // const newSong = new YouTubeSong(this, info, {});
-    // song.ageRestricted = newSong.ageRestricted;
-    // song.views = newSong.views;
-    // song.likes = newSong.likes;
-    // song.thumbnail = newSong.thumbnail;
-    // song.related = newSong.related;
-    // song.chapters = newSong.chapters;
-    // song.storyboards = newSong.storyboards;
-    // const format = info.formats
-    //   .filter(f => f.hasAudio && (!newSong.isLive || f.isHLS))
-    //   .sort((a, b) => Number(b.audioBitrate) - Number(a.audioBitrate) || Number(a.bitrate) - Number(b.bitrate))[0];
-    // if (!format) throw new DisTubeError("UNPLAYABLE_FORMATS");
-    // return format.url;
   }
   async getRelatedSongs(song: YouTubeSong): Promise<Song[]> {
     return (song.related ? song.related : (await ytdl.getBasicInfo(song.url!, this.ytdlOptions)).related_videos)

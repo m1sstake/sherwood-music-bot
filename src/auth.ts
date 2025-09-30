@@ -21,14 +21,12 @@ import { DirectLinkPlugin } from '@distube/direct-link';
 import { Command } from './types/types.js';
 import { YouTubePlugin } from './extractors/youtube/youtube.js';
 
-// import ytdl, { Agent } from '@distube/ytdl-core';
 
 export const followUp = async (
   interaction: ChatInputCommandInteraction,
   embed: EmbedBuilder,
   textChannel: GuildTextBasedChannel,
 ) => {
-  // Follow up interaction if created time is less than 15 minutes
   if (Date.now() - interaction.createdTimestamp < 15 * 60 * 1000) {
     await interaction.followUp({ embeds: [embed] });
   } else {
@@ -36,34 +34,11 @@ export const followUp = async (
   }
 };
 
-// function getYoutubeCookies(): ytdl.Cookie[] {
-//   try {
-//     console.log('Cookies load');
-
-//     return JSON.parse(readFileSync('./cookies.json', { encoding: 'utf-8' }));
-//   } catch (e) {
-//     console.log(e);
-
-//     return [];
-//   }
-// }
-
-// function getYoutubeAgent(): Agent {
-//   const cookies = getYoutubeCookies();
-
-//   return ytdl.createAgent(cookies);
-// }
 
 export class DisTubeClient extends Client<true> {
   distube = new DisTube(this, {
     plugins: [
       new YouTubePlugin(),
-      // new YouTubePlugin({
-      //   ytdlOptions: {
-      //     agent: getYoutubeAgent(),
-      //   },
-      //   cookies: getYoutubeCookies(),
-      // }),
       new SpotifyPlugin() as unknown as DisTubePlugin,
       new DirectLinkPlugin() as unknown as DisTubePlugin,
       new FilePlugin() as unknown as DisTubePlugin,

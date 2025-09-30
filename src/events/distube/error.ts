@@ -27,5 +27,7 @@ export default class ErrorEvent extends DisTubeEvent<Events.ERROR> {
     } else {
       console.error(error);
     }
+    
+    this.client.distube.voices.get(queue.voiceChannel)?.leave();
   }
 }
