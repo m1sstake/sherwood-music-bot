@@ -93,7 +93,7 @@ export class YouTubePlugin extends ExtractorPlugin {
 
   private async getVideoInfoWithYtDlp(url: string): Promise<YtDlpResponse> {
     return new Promise((resolve, reject) => {
-      const ytDlp = spawn('yt-dlp', ['--dump-json', '--no-warnings', url]);
+      const ytDlp = spawn('yt-dlp', ['--print', '%(formats)j', '--no-warnings', url]);
 
       let stdout = '';
       let stderr = '';
@@ -109,8 +109,8 @@ export class YouTubePlugin extends ExtractorPlugin {
       ytDlp.on('close', (code: number) => {
         if (code === 0) {
           try {
-            const info = JSON.parse(stdout) as YtDlpResponse;
-            resolve(info);
+            const formats = JSON.parse(stdout) as YtDlpFormat[];
+            resolve({ formats });
           } catch (parseError: unknown) {
             reject(new Error(`Failed to parse yt-dlp JSON output: ${String(parseError)}`));
           }
@@ -144,7 +144,7 @@ export class YouTubePlugin extends ExtractorPlugin {
   async getStreamURL<T = unknown>(song: YouTubeSong<T>): Promise<string> {
     if (!song.url || !ytdl.validateURL(song.url)) throw new DisTubeError("CANNOT_RESOLVE_SONG", song);
     const video = await this.getVideoInfoWithYtDlp(song.url);
-
+    
     const formats = (video.formats ?? []).map((format: YtDlpFormat) => ({
       url: format.url ?? '',
       itag: format.format_id ?? '',
