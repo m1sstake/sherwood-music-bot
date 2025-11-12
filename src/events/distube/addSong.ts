@@ -12,7 +12,8 @@ export default class AddSongEvent extends DisTubeEvent<Events.ADD_SONG> {
           .setColor('Blurple')
           .setTitle('Sherwood')
           .setDescription(`Added \`${song.name}\` to the queue`),
-      ],
-    });
+        ],
+      });
+    }
   }
-}
+

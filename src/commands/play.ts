@@ -34,19 +34,27 @@ export default class PlayCommand extends Command {
 
     await interaction.deferReply();
 
+
     this.client.distube
       .play<Metadata>(vc, input, {
-        skip: false,
-        position: undefined,
+        skip: true,
+        position: 0,
         textChannel: interaction.channel ?? undefined,
         member: interaction.member,
         metadata: { interaction },
       })
-      .then(() => {
+      .then(async () => {
         if (seek) {
           console.log('seek', seek);
           this.distube.seek(interaction, seek);
         }
+
+        const queue = this.client.distube.getQueue(vc);
+
+        if (queue.songs.length > 1 && queue?.isPlaying()) {
+          await queue?.skip();
+        }
+
       })
       .catch((e) => {
         console.error(e);
