@@ -1,5 +1,4 @@
 import ytpl from "@distube/ytpl";
-import ytsr from "@distube/ytsr";
 import ytdl from "@distube/ytdl-core";
 import { DisTubeError, ExtractorPlugin, Playlist, type ResolveOptions, Song } from "distube";
 import { spawn } from "child_process";
@@ -19,6 +18,32 @@ interface YtDlpResponse {
   formats?: YtDlpFormat[];
   is_live?: boolean;
   duration?: number;
+}
+
+interface YtDlpSearchVideo {
+  id: string;
+  title: string;
+  url: string;
+  thumbnail?: string;
+  duration?: number | string;
+  view_count?: number;
+  channel?: string;
+  channel_id?: string;
+  channel_url?: string;
+  is_live?: boolean;
+  _type: "video";
+}
+
+interface YtDlpSearchPlaylist {
+  id: string;
+  title: string;
+  url: string;
+  thumbnail?: string;
+  channel?: string;
+  channel_id?: string;
+  channel_url?: string;
+  playlist_count?: number;
+  _type: "playlist";
 }
 
 export const clone = <T>(obj: T): T => {
@@ -125,6 +150,104 @@ export class YouTubePlugin extends ExtractorPlugin {
     });
   }
 
+  private async searchWithYtDlp(
+    query: string,
+    options: { type?: SearchResultType; limit?: number },
+  ): Promise<(YtDlpSearchVideo | YtDlpSearchPlaylist)[]> {
+    return new Promise((resolve, reject) => {
+      const searchType = options.type ?? SearchResultType.VIDEO;
+      
+      // Всегда ищем только первое видео/плейлист
+      const searchQuery = `ytsearch1:${query}`;
+
+      const args = [
+        '--dump-json',
+        '--no-warnings',
+        searchQuery,
+      ];
+
+      // Для плейлистов добавляем --flat-playlist
+      if (searchType === SearchResultType.PLAYLIST) {
+        args.splice(1, 0, '--flat-playlist');
+      }
+
+      const ytDlp = spawn('yt-dlp', args);
+
+      let stdout = '';
+      let stderr = '';
+
+      ytDlp.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      ytDlp.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      ytDlp.on('close', (code: number) => {
+        if (code === 0) {
+          try {
+            // Обрабатываем только первую строку JSON
+            const firstLine = stdout.trim().split('\n').find(line => line.trim());
+            if (!firstLine) {
+              resolve([]);
+              return;
+            }
+
+            const item = JSON.parse(firstLine);
+            const id = item.id || item.url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/playlist\?list=)([^&\s]+)/)?.[1];
+            
+            if (!id) {
+              resolve([]);
+              return;
+            }
+
+            const isPlaylist = item._type === 'playlist' || 
+                              item.url?.includes('playlist') || 
+                              item.playlist_id ||
+                              searchType === SearchResultType.PLAYLIST;
+
+            const result: YtDlpSearchVideo | YtDlpSearchPlaylist = isPlaylist
+              ? {
+                  id: item.playlist_id || item.id || id,
+                  title: item.title || item.playlist_title || '',
+                  url: item.url || item.webpage_url || `https://www.youtube.com/playlist?list=${id}`,
+                  thumbnail: item.thumbnail || item.thumbnails?.[0]?.url,
+                  channel: item.channel || item.uploader || item.channel_name,
+                  channel_id: item.channel_id,
+                  channel_url: item.channel_url || item.uploader_url || item.channel_url,
+                  playlist_count: item.playlist_count || item.n_entries || 0,
+                  _type: 'playlist',
+                }
+              : {
+                  id,
+                  title: item.title || '',
+                  url: item.url || item.webpage_url || `https://youtu.be/${id}`,
+                  thumbnail: item.thumbnail || item.thumbnails?.[0]?.url,
+                  duration: item.duration || item.duration_string,
+                  view_count: item.view_count,
+                  channel: item.channel || item.uploader || item.channel_name,
+                  channel_id: item.channel_id,
+                  channel_url: item.channel_url || item.uploader_url,
+                  is_live: item.is_live || false,
+                  _type: 'video',
+                };
+
+            resolve([result]);
+          } catch (parseError: unknown) {
+            reject(new Error(`Failed to parse yt-dlp search output: ${String(parseError)}`));
+          }
+        } else {
+          reject(new Error(`yt-dlp search failed with code ${code}: ${stderr}`));
+        }
+      });
+
+      ytDlp.on('error', (error: Error) => {
+        reject(new Error(`Failed to spawn yt-dlp: ${error.message}`));
+      });
+    });
+  }
+
   validate(url: string): boolean {
     if (ytdl.validateURL(url) || ytpl.validateID(url)) return true;
     return false;
@@ -222,16 +345,13 @@ export class YouTubePlugin extends ExtractorPlugin {
       safeSearch?: boolean;
     } = {},
   ): Promise<(YouTubeSearchResultSong | YouTubeSearchResultPlaylist)[]> {
-    const { items } = await ytsr(query, {
-      type: SearchResultType.VIDEO,
-      limit: 10,
-      safeSearch: false,
-      ...options,
-      requestOptions: { headers: { cookie: this.ytCookie } },
+    const items = await this.searchWithYtDlp(query, {
+      type: options.type ?? SearchResultType.VIDEO,
+      limit: options.limit ?? 10,
     });
     return items.map(i => {
-      if (i.type === "video") return new YouTubeSearchResultSong(this, i);
-      return new YouTubeSearchResultPlaylist(i);
+      if (i._type === "video") return new YouTubeSearchResultSong(this, i as YtDlpSearchVideo);
+      return new YouTubeSearchResultPlaylist(i as YtDlpSearchPlaylist);
     });
   }
 }
@@ -361,21 +481,21 @@ export enum SearchResultType {
  * A class representing a video search result.
  */
 export class YouTubeSearchResultSong extends Song {
-  constructor(plugin: YouTubePlugin, info: ytsr.Video) {
+  constructor(plugin: YouTubePlugin, info: YtDlpSearchVideo) {
     super({
       plugin,
       source: "youtube",
       playFromSource: true,
       id: info.id,
-      name: info.name,
-      url: `https://youtu.be/${info.id}`,
+      name: info.title,
+      url: info.url || `https://youtu.be/${info.id}`,
       thumbnail: info.thumbnail,
-      isLive: info.isLive,
+      isLive: info.is_live || false,
       duration: toSecond(info.duration),
-      views: parseNumber(info.views),
+      views: parseNumber(info.view_count),
       uploader: {
-        name: info.author?.name,
-        url: info.author?.url,
+        name: info.channel,
+        url: info.channel_url,
       },
     });
   }
@@ -408,18 +528,14 @@ export class YouTubeSearchResultPlaylist {
    * Number of videos in the playlist
    */
   length: number;
-  constructor(info: ytsr.Playlist) {
+  constructor(info: YtDlpSearchPlaylist) {
     this.id = info.id;
-    this.name = info.name;
-    this.url = `https://www.youtube.com/playlist?list=${info.id}`;
+    this.name = info.title;
+    this.url = info.url || `https://www.youtube.com/playlist?list=${info.id}`;
     this.uploader = {
-      name: info.owner?.name,
-      url: info.owner?.url,
+      name: info.channel,
+      url: info.channel_url,
     };
-    this.length = info.length;
-    this.uploader = {
-      name: info.owner?.name,
-      url: info.owner?.url,
-    };
+    this.length = info.playlist_count || 0;
   }
 }
